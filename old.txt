@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MNIST Digit Classifier</title>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: #1a1a2e;
+            color: white;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background: #16213e;
+            z-index: -1;
+        }
+
+        h1 {
+            color: #fddb3a;
+            font-size: 36px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(253, 219, 58, 0.8);
+        }
+
+        .description {
+            max-width: 700px;
+            font-size: 18px;
+            color: #ffec99;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .container {
+            width: 400px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+            z-index: 1;
+        }
+
+        .upload-box {
+            border: 2px dashed #fddb3a;
+            padding: 20px;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .btn {
+            background-color: #fddb3a;
+            color: black;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 18px;
+            margin-top: 10px;
+            border-radius: 6px;
+            transition: 0.3s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background-color: #ffe866;
+        }
+
+        .result {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fddb3a;
+            margin-top: 20px;
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-size: 16px;
+            color: #fddb3a;
+            opacity: 0.8;
+            position: absolute;
+            bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="particles-js"></div>
+
+    <h1>🧠 MNIST Digit Classifier 🔢</h1>
+
+    <div class="description">
+        <h2>📌 What is this site?</h2>
+        <p>This is an AI-powered digit recognition tool that can classify handwritten numbers (0-9) using a deep learning model trained on the MNIST dataset.</p>
+
+        <h2>🛠️ How to use it?</h2>
+        <ul>
+            <li>Click or drag & drop an image containing a single digit (0-9).</li>
+            <li>Ensure the image is clear, centered, and meets the requirements below.</li>
+            <li>Click the "Predict" button, and the AI will classify the number.</li>
+        </ul>
+
+        <h2>⚠️ Conditions & Requirements</h2>
+        <ul>
+            <li>The image should contain a <strong>single handwritten digit</strong>.</li>
+            <li>Format: PNG, JPG, or JPEG.</li>
+            <li><strong>Background must be black, and the digit should be white.</strong></li>
+        </ul>
+    </div>
+
+    <div class="container">
+        <form id="uploadForm" action="/predict" method="post" enctype="multipart/form-data">
+            <label for="fileUpload" class="upload-box">
+                <p>📂 Click or Drag & Drop Image</p>
+                <input type="file" name="file" id="fileUpload" accept="image/*" required>
+            </label>
+            <br>
+            <button type="submit" class="btn">Predict 🔮</button>
+            <button type="button" class="btn" id="clearBtn">Clear ❌</button>
+        </form>
+
+        <div class="result" id="predictionResult">
+            {% if prediction is not none %}
+                <p>Predicted Digit: <strong style="font-size: 32px;">{{ prediction }}</strong></p>
+                <p>Confidence Level: <strong>{{ confidence }}%</strong></p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="footer">Made with ❤️ by <strong>Adeel</strong> 🚀 | Bringing AI to Life!</div>
+
+    <script>
+        particlesJS("particles-js", {
+            "particles": {
+                "number": { "value": 100, "density": { "enable": true, "value_area": 900 } },
+                "color": { "value": "#fddb3a" },
+                "shape": { "type": "circle" },
+                "opacity": { "value": 0.6, "random": true },
+                "size": { "value": 4, "random": true },
+                "line_linked": { "enable": true, "distance": 150, "color": "#fddb3a", "opacity": 0.4, "width": 1 }
+            },
+            "interactivity": {
+                "events": {
+                    "onhover": { "enable": true, "mode": "grab" },
+                    "onclick": { "enable": true, "mode": "push" }
+                },
+                "modes": {
+                    "grab": { "distance": 200, "line_linked": { "opacity": 1 } },
+                    "push": { "particles_nb": 4 }
+                }
+            },
+            "retina_detect": true
+        });
+
+        document.getElementById("clearBtn").addEventListener("click", function () {
+            document.getElementById("fileUpload").value = "";
+            document.getElementById("predictionResult").innerHTML = "";
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+To make the text visually appealing, readable, and beautiful, here are my suggestions for color combinations:
+
+1. **Title (MNIST Digit Classifier)**
+   - **White (#FFFFFF) or Neon Cyan (#00FFFF)**
+   - Keep it bold with a slight glow effect for a futuristic look.
+
+2. **Section Headers (What is this site? / How to use it? / Conditions & Requirements)**
+   - **Bright Yellow (#FFD700) or Light Cyan (#00E5FF)**
+   - These colors contrast well with the dark background, making them pop.
+
+3. **Body Text**
+   - **Light Gray (#D3D3D3) or Soft White (#EAEAEA)**
+   - This ensures readability without being too bright.
+
+4. **Important Notes (e.g., "Background must be black, and the digit should be white.")**
+   - **Bold Red (#FF4500) or Bright Orange (#FFA500)**
+   - Draws attention to crucial information.
+
+5. **Buttons (Predict / Clear)**
+   - **Predict: Neon Green (#39FF14)**
+   - **Clear: Bright Red (#FF4C4C)**
+   - Makes them stand out as interactive elements.
+
+6. **Footer (Made with ❤️ by Adeel 🚀 | Bringing AI to Life!)**
+   - **White (#FFFFFF) with Red Heart and Neon Blue for Name**
+   - Keeps the signature stylish and friendly.
+
+By using these colors, the site will have a modern, cyberpunk-style aesthetic while maintaining great readability. 🚀
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MNIST Digit Classifier</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: black;
+            color: #EAEAEA; /* Soft White */
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #canvas-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        h1 {
+            color: #00FFFF; /* Neon Cyan */
+            text-shadow: 0 0 10px #00FFFF, 0 0 20px #00FFFF;
+            font-size: 2.5rem;
+            font-weight: bold;
+            padding: 15px;
+        }
+
+        h2 {
+            color: #FFD700; /* Bright Yellow */
+            font-size: 1.8rem;
+        }
+
+        p, li {
+            color: #EAEAEA; /* Soft White */
+        }
+
+        strong {
+            color: #FF4500; /* Bold Red */
+        }
+
+        .description, .container, .footer {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+
+        .container {
+            width: 400px;
+        }
+
+        button {
+            font-size: 1rem;
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            margin: 10px;
+        }
+
+        .btn {
+            font-weight: bold;
+        }
+
+        .btn[type="submit"] {
+            background-color: #39FF14; /* Neon Green */
+            color: black;
+        }
+
+        .btn#clearBtn {
+            background-color: #FF4C4C; /* Bright Red */
+            color: white;
+        }
+
+        .footer {
+            color: white;
+            font-size: 1rem;
+        }
+
+        .footer strong {
+            color: #00BFFF; /* Neon Blue */
+        }
+
+        .footer span {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas-background"></canvas>
+    <div id="particles-js"></div>
+    
+    <h1>🧠 MNIST Digit Classifier 🔢</h1>
+
+    <div class="description">
+        <h2>📌 What is this site?</h2>
+        <p>This is an AI-powered digit recognition tool that can classify handwritten numbers (0-9) using a deep learning model trained on the MNIST dataset.</p>
+
+        <h2>🛠️ How to use it?</h2>
+        <ul>
+            <li>Click or drag & drop an image containing a single digit (0-9).</li>
+            <li>Ensure the image is clear, centered, and meets the requirements below.</li>
+            <li>Click the "Predict" button, and the AI will classify the number.</li>
+        </ul>
+
+        <h2>⚠️ Conditions & Requirements</h2>
+        <ul>
+            <li>The image should contain a <strong>single handwritten digit</strong>.</li>
+            <li>Format: PNG, JPG, or JPEG.</li>
+            <li><strong>Background must be black, and the digit should be white.</strong></li>
+        </ul>
+    </div>
+
+    <div class="container">
+        <form id="uploadForm" action="/predict" method="post" enctype="multipart/form-data">
+            <label for="fileUpload" class="upload-box">
+                <p>📂 Click or Drag & Drop Image</p>
+                <input type="file" name="file" id="fileUpload" accept="image/*" required>
+            </label>
+            <br>
+            <button type="submit" class="btn">Predict 🔮</button>
+            <button type="button" class="btn" id="clearBtn">Clear ❌</button>
+        </form>
+
+        <div class="result" id="predictionResult">
+            {% if prediction is not none %}
+                <p>Predicted Digit: <strong style="font-size: 32px;">{{ prediction }}</strong></p>
+                <p>Confidence Level: <strong>{{ confidence }}%</strong></p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="footer">Made with <span>❤️</span> by <strong>Adeel</strong> 🚀 | Bringing AI to Life!</div>
+
+    <script>
+        const canvas = document.getElementById("canvas-background");
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const characters = "0123456789";
+        const columns = canvas.width / 20;
+        const drops = Array(Math.floor(columns)).fill(0);
+
+        function draw() {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.1)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#00FF00";
+            ctx.font = "20px monospace";
+            
+            for (let i = 0; i < drops.length; i++) {
+                const text = characters[Math.floor(Math.random() * characters.length)];
+                ctx.fillText(text, i * 20, drops[i] * 20);
+                
+                if (drops[i] * 20 > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+        setInterval(draw, 50);
+    </script>
+</body>
+</html>
+
